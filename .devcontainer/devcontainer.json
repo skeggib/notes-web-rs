@@ -10,7 +10,8 @@
 	},
 
 	"extensions": [
-		"rust-lang.rust-analyzer"
+		"rust-lang.rust-analyzer",
+		"bungcip.better-toml"
 	]
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
