@@ -9,7 +9,7 @@ use seed::{prelude::*, *};
 fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
     Model {
         notes: model::Model::new(),
-        selected_note_index: 0,
+        selected_note_filename: "note_1.txt".to_string(),
     }
 }
 
@@ -19,7 +19,7 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
 
 struct Model {
     notes: model::Model,
-    selected_note_index: usize,
+    selected_note_filename: String,
 }
 
 // ------ ------
@@ -29,31 +29,39 @@ struct Model {
 enum Msg {
     TitleChanged(String),
     ContentsChanged(String),
+    NoteSelected(String)
 }
 
 fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
-    let (current_filename, current_note) = model
-        .notes
-        .notes
-        .iter()
-        .nth(model.selected_note_index)
-        .unwrap();
-    let mut updated_note = current_note.clone();
     match msg {
         Msg::TitleChanged(new_title) => {
+            let current_note = &model
+                .notes
+                .notes[&model.selected_note_filename];
+            let mut updated_note = current_note.clone();
             updated_note.title = new_title;
-            log!(format!("{}", model.notes));
+            *model
+                .notes
+                .notes
+                .entry(model.selected_note_filename.to_string())
+                .or_insert(model::Note::new()) = updated_note;
         }
         Msg::ContentsChanged(new_contents) => {
+            let current_note = &model
+                .notes
+                .notes[&model.selected_note_filename];
+            let mut updated_note = current_note.clone();
             updated_note.body = new_contents;
-            log!(format!("{}", model.notes));
+            *model
+                .notes
+                .notes
+                .entry(model.selected_note_filename.to_string())
+                .or_insert(model::Note::new()) = updated_note;
+        }
+        Msg::NoteSelected(filename) => {
+            model.selected_note_filename = filename
         }
     }
-    *model
-        .notes
-        .notes
-        .entry(current_filename.to_string())
-        .or_insert(model::Note::new()) = updated_note;
 }
 
 // ------ ------
@@ -61,15 +69,17 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 // ------ ------
 
 fn view(model: &Model) -> Node<Msg> {
-    note_editor(
-        model
-            .notes
-            .notes
-            .iter()
-            .nth(model.selected_note_index)
-            .unwrap()
-            .1,
-    )
+    div![
+        note_editor(
+            &model
+                .notes
+                .notes[&model.selected_note_filename],
+        ),
+        div![ul![model.notes.notes.keys().map(|filename| {
+            let selected_note_filename = filename.to_string();
+            li![filename, ev(Ev::Click, move |_| Msg::NoteSelected(selected_note_filename))]
+        })]]
+    ]
 }
 
 fn note_editor(note: &model::Note) -> Node<Msg> {
